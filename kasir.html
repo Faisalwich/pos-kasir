@@ -1,0 +1,2473 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>POS Kasir</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#c8f135" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="POS Kasir" />
+
+    <!-- Google Fonts: Syne untuk judul, DM Mono untuk angka -->
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <style>
+      /* =============================================
+       CSS VARIABLES — ubah di sini untuk ganti tema
+    ============================================= */
+      :root {
+        --bg: #0f0f0f; /* Latar belakang utama */
+        --panel: #1a1a1a; /* Latar panel/card */
+        --border: #2a2a2a; /* Warna garis batas */
+        --accent: #c8f135; /* Warna aksen (kuning-hijau neon) */
+        --accent2: #ff6b35; /* Warna aksen kedua (oranye) */
+        --text: #f0f0f0; /* Teks utama */
+        --text-dim: #666; /* Teks redup/label */
+        --danger: #ff4444; /* Warna tombol hapus */
+        --font-ui: "DM Sans", sans-serif;
+        --font-head: "Syne", sans-serif;
+        --font-mono: "DM Mono", monospace;
+      }
+
+      /* =============================================
+       RESET & BASE
+    ============================================= */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-ui);
+        background: var(--bg);
+        color: var(--text);
+        height: 100vh;
+        display: grid;
+        /* Layout utama: area produk | panel kasir */
+        grid-template-columns: 1fr 380px;
+        grid-template-rows: 56px 1fr;
+        overflow: hidden;
+      }
+
+      /* =============================================
+       HEADER / TOPBAR
+    ============================================= */
+      header {
+        grid-column: 1 / -1; /* Rentang dari kolom 1 sampai akhir */
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        gap: 12px;
+      }
+
+      header .logo {
+        font-family: var(--font-head);
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: var(--accent);
+      }
+
+      /* Titik pemisah di header */
+      header .sep {
+        color: var(--border);
+        font-size: 1.4rem;
+      }
+
+      header .store-name {
+        font-size: 0.85rem;
+        color: var(--text-dim);
+        font-weight: 500;
+      }
+
+      /* Jam digital di pojok kanan header */
+      header .clock {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--text-dim);
+      }
+
+      /* =============================================
+       AREA KIRI — DAFTAR PRODUK
+    ============================================= */
+      .products-area {
+        padding: 20px;
+        overflow-y: auto; /* Scroll jika produk banyak */
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* Toolbar di atas grid produk */
+      .products-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .products-toolbar h2 {
+        font-family: var(--font-head);
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* Input pencarian produk */
+      .search-input {
+        margin-left: auto;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 14px;
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 0.85rem;
+        width: 200px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .search-input:focus {
+        border-color: var(--accent);
+      }
+      .search-input::placeholder {
+        color: var(--text-dim);
+      }
+
+      /* Grid kartu produk */
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+      }
+
+      /* Kartu produk individual */
+      .product-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          transform 0.1s,
+          background 0.15s;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Efek hover kartu produk */
+      .product-card:hover {
+        border-color: var(--accent);
+        background: #1f1f1f;
+        transform: translateY(-2px);
+      }
+
+      /* Efek klik kartu produk */
+      .product-card:active {
+        transform: translateY(0);
+      }
+
+      /* Indikator kategori — garis warna di atas kartu */
+      .product-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--card-color, var(--border));
+        border-radius: 12px 12px 0 0;
+      }
+
+      /* Emoji / icon produk */
+      .product-card .icon {
+        font-size: 1.8rem;
+        line-height: 1;
+      }
+
+      .product-card .name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        line-height: 1.3;
+      }
+
+      .product-card .price {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--accent);
+        margin-top: auto;
+      }
+
+      /* Badge stok di pojok kartu */
+      .product-card .stock {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 0.65rem;
+        color: var(--text-dim);
+        font-family: var(--font-mono);
+      }
+
+      /* =============================================
+       AREA KANAN — PANEL KASIR
+    ============================================= */
+      .cashier-panel {
+        background: var(--panel);
+        border-left: 1px solid var(--border);
+        display: grid;
+        /* Panel dibagi: judul | daftar item | summary | pembayaran */
+        grid-template-rows: auto 1fr auto auto;
+        overflow: hidden;
+      }
+
+      /* Header panel kasir */
+      .panel-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .panel-header h3 {
+        font-family: var(--font-head);
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* Nomor transaksi */
+      .txn-id {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--accent);
+      }
+
+      /* Daftar item dalam keranjang */
+      .cart-items {
+        overflow-y: auto; /* Scroll jika item banyak */
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      /* Tampilan saat keranjang kosong */
+      .cart-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--text-dim);
+        font-size: 0.85rem;
+      }
+
+      .cart-empty .empty-icon {
+        font-size: 2.5rem;
+        opacity: 0.3;
+      }
+
+      /* Item individual dalam keranjang */
+      .cart-item {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        display: grid;
+        /* Layout: nama produk | kontrol qty | harga */
+        grid-template-columns: 1fr auto auto;
+        align-items: center;
+        gap: 8px;
+        animation: slideIn 0.15s ease;
+      }
+
+      /* Animasi masuk item baru */
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .cart-item .item-name {
+        font-size: 0.85rem;
+        font-weight: 500;
+        line-height: 1.3;
+      }
+
+      .cart-item .item-sub {
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        font-family: var(--font-mono);
+      }
+
+      /* Grup tombol kontrol quantity */
+      .qty-control {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* Tombol + dan - pada qty */
+      .qty-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        transition:
+          background 0.1s,
+          border-color 0.1s;
+      }
+      .qty-btn:hover {
+        background: var(--border);
+        border-color: var(--text-dim);
+      }
+
+      /* Tombol minus khusus — merah jika qty = 1 (akan hapus item) */
+      .qty-btn.minus:hover {
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+
+      .qty-num {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        min-width: 20px;
+        text-align: center;
+      }
+
+      /* Harga subtotal per item */
+      .cart-item .item-price {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--accent);
+        text-align: right;
+        min-width: 80px;
+      }
+
+      /* =============================================
+       RINGKASAN PEMBAYARAN (SUMMARY)
+    ============================================= */
+      .cart-summary {
+        border-top: 1px solid var(--border);
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* Baris subtotal / diskon / pajak */
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.82rem;
+        color: var(--text-dim);
+      }
+
+      .summary-row .val {
+        font-family: var(--font-mono);
+      }
+
+      /* Garis pemisah sebelum total */
+      .summary-divider {
+        border: none;
+        border-top: 1px dashed var(--border);
+        margin: 4px 0;
+      }
+
+      /* Baris TOTAL — lebih besar dan terang */
+      .summary-row.total {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .summary-row.total .val {
+        color: var(--accent);
+        font-size: 1.2rem;
+      }
+
+      /* =============================================
+       SEKSI PEMBAYARAN
+    ============================================= */
+      .payment-section {
+        padding: 16px 20px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .payment-label {
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+
+      /* Tombol-tombol nominal cepat */
+      .quick-amounts {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+
+      .quick-btn {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        padding: 8px 4px;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+        text-align: center;
+      }
+      .quick-btn:hover {
+        border-color: var(--accent);
+        background: #1f1f1f;
+      }
+
+      /* Input nominal bayar manual */
+      .pay-input-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .pay-input {
+        flex: 1;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        color: var(--text);
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .pay-input:focus {
+        border-color: var(--accent);
+      }
+
+      /* Baris kembalian */
+      .kembalian-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #1a2200;
+        border: 1px solid #3a5000;
+        border-radius: 8px;
+        padding: 10px 14px;
+      }
+
+      .kembalian-row .label {
+        font-size: 0.8rem;
+        color: #8aaa44;
+      }
+
+      .kembalian-row .val {
+        font-family: var(--font-mono);
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--accent);
+      }
+
+      /* Warna merah jika kurang bayar */
+      .kembalian-row.kurang {
+        background: #220000;
+        border-color: #550000;
+      }
+      .kembalian-row.kurang .label {
+        color: #aa4444;
+      }
+      .kembalian-row.kurang .val {
+        color: var(--danger);
+      }
+
+      /* Tombol utama BAYAR */
+      .btn-bayar {
+        width: 100%;
+        background: var(--accent);
+        color: #0f0f0f;
+        border: none;
+        border-radius: 10px;
+        padding: 14px;
+        font-family: var(--font-head);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition:
+          opacity 0.15s,
+          transform 0.1s;
+      }
+      .btn-bayar:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+      .btn-bayar:active {
+        transform: translateY(0);
+      }
+      /* Disable jika belum bisa bayar */
+      .btn-bayar:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* =============================================
+       PAYMENT METHOD
+    ============================================= */
+      .pay-method-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+      .pay-method-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 4px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-dim);
+        font-family: var(--font-ui);
+        font-size: 0.65rem;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .pay-method-btn span {
+        font-size: 0.65rem;
+      }
+      .pay-method-btn:hover {
+        border-color: var(--accent);
+        color: var(--text);
+      }
+      .pay-method-btn.active {
+        border-color: var(--accent);
+        background: rgba(200, 241, 53, 0.08);
+        color: var(--accent);
+      }
+      .pay-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      /* QRIS */
+      .qris-box {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .qris-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+      .qris-logo {
+        font-family: var(--font-head);
+        font-size: 0.85rem;
+        color: var(--accent);
+      }
+      .qris-label {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        background: rgba(200, 241, 53, 0.12);
+        color: var(--accent);
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+      .qris-qr {
+        background: white;
+        border-radius: 10px;
+        padding: 8px;
+      }
+      .qris-total {
+        font-family: var(--font-mono);
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: var(--accent);
+      }
+      .qris-note {
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        text-align: center;
+      }
+      .qris-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: center;
+      }
+      .qris-badges span {
+        font-size: 0.62rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+      }
+      .qris-confirm-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .btn-konfirmasi-qris {
+        background: rgba(74, 222, 128, 0.1);
+        border: 1px solid rgba(74, 222, 128, 0.3);
+        border-radius: 8px;
+        color: #4ade80;
+        font-family: var(--font-ui);
+        font-size: 0.78rem;
+        padding: 7px 12px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s;
+      }
+      .btn-konfirmasi-qris:hover {
+        background: rgba(74, 222, 128, 0.2);
+      }
+      .btn-konfirmasi-qris:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Transfer */
+      .transfer-box {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .transfer-title {
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+      .bank-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .bank-logo {
+        font-size: 1.4rem;
+      }
+      .bank-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .bank-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+      .bank-norek {
+        font-family: var(--font-mono);
+        font-size: 0.88rem;
+        color: var(--accent);
+      }
+      .bank-atas-nama {
+        font-size: 0.68rem;
+        color: var(--text-dim);
+      }
+      .btn-copy-norek {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-dim);
+        font-size: 0.9rem;
+        padding: 5px 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn-copy-norek:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .transfer-amount-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(200, 241, 53, 0.06);
+        border: 1px solid rgba(200, 241, 53, 0.2);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 0.8rem;
+      }
+      .transfer-amount {
+        font-family: var(--font-mono);
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      /* EDC */
+      .edc-box {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .edc-icon {
+        font-size: 2rem;
+      }
+      .edc-title {
+        font-size: 0.85rem;
+        color: var(--text-dim);
+      }
+      .edc-amount {
+        font-family: var(--font-mono);
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--accent);
+      }
+      .edc-steps {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .edc-step {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.78rem;
+        color: var(--text-dim);
+      }
+      .step-num {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(200, 241, 53, 0.1);
+        border: 1px solid rgba(200, 241, 53, 0.3);
+        color: var(--accent);
+        font-size: 0.7rem;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        font-family: var(--font-mono);
+      }
+
+      /* Mini toast */
+      .mini-toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(60px);
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 0.82rem;
+        color: var(--text);
+        z-index: 9999;
+        opacity: 0;
+        transition:
+          transform 0.25s,
+          opacity 0.25s;
+        white-space: nowrap;
+      }
+      .mini-toast.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+
+      /* Tombol hapus semua / reset transaksi */
+      .btn-clear {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-dim);
+        font-size: 0.8rem;
+        padding: 8px 16px;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+        font-family: var(--font-ui);
+      }
+      .btn-clear:hover {
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+
+      /* =============================================
+       MODAL SUKSES PEMBAYARAN
+    ============================================= */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: grid;
+        place-items: center;
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+
+      .modal-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .modal-box {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 320px;
+        transform: scale(0.9);
+        transition: transform 0.2s;
+      }
+
+      .modal-overlay.active .modal-box {
+        transform: scale(1);
+      }
+
+      .modal-icon {
+        font-size: 3rem;
+      }
+
+      .modal-title {
+        font-family: var(--font-head);
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--accent);
+      }
+
+      .modal-detail {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--text-dim);
+        line-height: 1.8;
+      }
+
+      .modal-kembalian {
+        font-family: var(--font-mono);
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--accent);
+      }
+
+      .btn-modal {
+        background: var(--accent);
+        color: #0f0f0f;
+        border: none;
+        border-radius: 10px;
+        padding: 12px;
+        font-family: var(--font-head);
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        margin-top: 8px;
+      }
+
+      /* =============================================
+       SCROLLBAR CUSTOM (agar tetap gelap)
+    ============================================= */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- =============================================
+       HEADER
+  ============================================= -->
+    <header>
+      <span class="logo">⚡ KASIR</span>
+      <span class="sep">·</span>
+      <span class="store-name" id="storeName">Toko Sumber Makmur</span>
+
+      <!-- Indikator shift aktif — hijau jika shift buka, merah jika belum -->
+      <div
+        id="shiftIndicator"
+        style="
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-left: auto;
+          font-size: 0.75rem;
+          padding: 4px 12px;
+          border-radius: 20px;
+          cursor: pointer;
+          border: 1px solid var(--border);
+          color: var(--text-dim);
+          transition: all 0.2s;
+          font-family: var(--font-ui);
+        "
+        onclick="bukaModalShift()"
+        title="Klik untuk kelola shift"
+      >
+        <span id="shiftDot" style="width: 7px; height: 7px; border-radius: 50%; background: #555; display: inline-block"></span>
+        <span id="shiftText">Memuat shift...</span>
+      </div>
+
+      <!-- Badge notifikasi stok menipis — muncul jika ada produk hampir habis -->
+      <div id="stockAlert" style="display: none; cursor: pointer" onclick="bukaModalStokAlert()" title="Produk stok menipis">
+        <span
+          style="
+            background: rgba(251, 146, 60, 0.15);
+            border: 1px solid rgba(251, 146, 60, 0.4);
+            color: #fb923c;
+            font-size: 0.72rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-family: var(--font-ui);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          "
+        >
+          ⚠️ <span id="stockAlertCount">0</span> stok menipis
+        </span>
+      </div>
+
+      <span class="clock" id="clock">--:--:--</span>
+      <button
+        onclick="logout()"
+        style="background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); font-size: 0.75rem; padding: 5px 12px; cursor: pointer; font-family: var(--font-ui)"
+      >
+        Keluar
+      </button>
+    </header>
+
+    <!-- =============================================
+       AREA PRODUK (KIRI)
+  ============================================= -->
+    <main class="products-area">
+      <div class="products-toolbar">
+        <h2>Produk</h2>
+        <!-- Input pencarian, filter produk secara real-time -->
+        <input class="search-input" type="text" placeholder="🔍 Cari produk..." id="searchInput" oninput="filterProducts()" />
+      </div>
+      <!-- Grid produk diisi secara dinamis oleh JS -->
+      <div class="product-grid" id="productGrid"></div>
+    </main>
+
+    <!-- =============================================
+       PANEL KASIR (KANAN)
+  ============================================= -->
+    <aside class="cashier-panel">
+      <!-- Header panel: judul + nomor transaksi -->
+      <div class="panel-header">
+        <h3>Transaksi</h3>
+        <span class="txn-id" id="txnId">#TXN-0001</span>
+      </div>
+
+      <!-- Daftar item yang sudah dipilih -->
+      <div class="cart-items" id="cartItems">
+        <!-- Tampilan default: keranjang kosong -->
+        <div class="cart-empty" id="cartEmpty">
+          <span class="empty-icon">🛒</span>
+          <span>Pilih produk untuk memulai</span>
+        </div>
+      </div>
+
+      <!-- Ringkasan harga -->
+      <div class="cart-summary" id="cartSummary" style="display: none">
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span class="val" id="subtotalVal">Rp 0</span>
+        </div>
+        <!-- Baris diskon — selalu tampil agar kasir bisa input -->
+        <div class="summary-row" style="align-items: center; gap: 6px">
+          <span style="white-space: nowrap">Diskon</span>
+          <!-- Pilih tipe diskon: persen atau nominal -->
+          <select
+            id="discountType"
+            onchange="hitungDiskon()"
+            style="background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); font-size: 0.72rem; padding: 3px 6px; outline: none; cursor: pointer"
+          >
+            <option value="none">Tidak ada</option>
+            <option value="percent">% Persen</option>
+            <option value="nominal">Rp Nominal</option>
+          </select>
+          <!-- Input nilai diskon — muncul jika tipe dipilih -->
+          <input
+            id="discountValue"
+            type="number"
+            min="0"
+            oninput="hitungDiskon()"
+            placeholder="0"
+            style="
+              display: none;
+              width: 70px;
+              background: var(--bg);
+              border: 1px solid var(--border);
+              border-radius: 6px;
+              color: var(--text);
+              font-size: 0.78rem;
+              padding: 4px 8px;
+              outline: none;
+              font-family: var(--font-mono);
+            "
+          />
+          <span class="val" id="discountVal" style="margin-left: auto">– Rp 0</span>
+        </div>
+        <hr class="summary-divider" />
+        <div class="summary-row total">
+          <span>TOTAL</span>
+          <span class="val" id="totalVal">Rp 0</span>
+        </div>
+      </div>
+
+      <!-- Seksi pembayaran -->
+      <div class="payment-section">
+        <!-- PILIH METODE BAYAR -->
+        <span class="payment-label">Metode Pembayaran</span>
+        <div class="pay-method-grid">
+          <button class="pay-method-btn active" id="pm-tunai" onclick="pilihMetode('tunai')">💵<span>Tunai</span></button>
+          <button class="pay-method-btn" id="pm-qris" onclick="pilihMetode('qris')">📱<span>QRIS</span></button>
+          <button class="pay-method-btn" id="pm-transfer" onclick="pilihMetode('transfer')">🏦<span>Transfer</span></button>
+          <button class="pay-method-btn" id="pm-edc" onclick="pilihMetode('edc')">💳<span>EDC/Kartu</span></button>
+        </div>
+
+        <!-- PANEL TUNAI -->
+        <div id="panel-tunai" class="pay-panel">
+          <div class="quick-amounts">
+            <button class="quick-btn" onclick="setPayAmount(5000)">5.000</button>
+            <button class="quick-btn" onclick="setPayAmount(10000)">10.000</button>
+            <button class="quick-btn" onclick="setPayAmount(20000)">20.000</button>
+            <button class="quick-btn" onclick="setPayAmount(50000)">50.000</button>
+            <button class="quick-btn" onclick="setPayAmount(100000)">100.000</button>
+            <button class="quick-btn" onclick="setExact()">Pas</button>
+          </div>
+          <div class="pay-input-row">
+            <input class="pay-input" type="number" id="payInput" placeholder="Masukkan nominal..." oninput="updateKembalian()" />
+            <button class="btn-clear" onclick="clearCart()">Reset</button>
+          </div>
+          <div class="kembalian-row" id="kembalianRow" style="display: none">
+            <span class="label" id="kembalianLabel">Kembalian</span>
+            <span class="val" id="kembalianVal">Rp 0</span>
+          </div>
+        </div>
+
+        <!-- PANEL QRIS -->
+        <div id="panel-qris" class="pay-panel" style="display: none">
+          <div class="qris-box">
+            <div class="qris-header">
+              <span class="qris-logo">⚡ KASIR</span>
+              <span class="qris-label">QRIS</span>
+            </div>
+            <div class="qris-qr">
+              <svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" style="width: 140px; height: 140px; image-rendering: pixelated">
+                <rect width="21" height="21" fill="white" />
+                <g fill="black">
+                  <rect x="0" y="0" width="7" height="7" />
+                  <rect x="1" y="1" width="5" height="5" fill="white" />
+                  <rect x="2" y="2" width="3" height="3" />
+                  <rect x="14" y="0" width="7" height="7" />
+                  <rect x="15" y="1" width="5" height="5" fill="white" />
+                  <rect x="16" y="2" width="3" height="3" />
+                  <rect x="0" y="14" width="7" height="7" />
+                  <rect x="1" y="15" width="5" height="5" fill="white" />
+                  <rect x="2" y="16" width="3" height="3" />
+                  <rect x="9" y="0" width="1" height="1" />
+                  <rect x="11" y="0" width="1" height="1" />
+                  <rect x="8" y="1" width="1" height="1" />
+                  <rect x="10" y="1" width="2" height="1" />
+                  <rect x="9" y="2" width="1" height="1" />
+                  <rect x="12" y="2" width="1" height="1" />
+                  <rect x="8" y="3" width="2" height="1" />
+                  <rect x="11" y="3" width="1" height="1" />
+                  <rect x="9" y="4" width="2" height="1" />
+                  <rect x="12" y="4" width="1" height="1" />
+                  <rect x="8" y="5" width="1" height="1" />
+                  <rect x="10" y="5" width="2" height="1" />
+                  <rect x="0" y="8" width="1" height="1" />
+                  <rect x="2" y="8" width="2" height="1" />
+                  <rect x="5" y="8" width="1" height="1" />
+                  <rect x="9" y="8" width="3" height="1" />
+                  <rect x="13" y="8" width="2" height="1" />
+                  <rect x="1" y="9" width="1" height="1" />
+                  <rect x="6" y="9" width="2" height="1" />
+                  <rect x="10" y="9" width="1" height="1" />
+                  <rect x="12" y="9" width="3" height="1" />
+                  <rect x="16" y="9" width="2" height="1" />
+                  <rect x="0" y="10" width="2" height="1" />
+                  <rect x="4" y="10" width="2" height="1" />
+                  <rect x="8" y="10" width="2" height="1" />
+                  <rect x="11" y="10" width="2" height="1" />
+                  <rect x="14" y="10" width="1" height="1" />
+                  <rect x="17" y="10" width="1" height="1" />
+                  <rect x="8" y="14" width="1" height="1" />
+                  <rect x="11" y="14" width="1" height="1" />
+                  <rect x="13" y="14" width="1" height="1" />
+                  <rect x="15" y="14" width="2" height="1" />
+                  <rect x="9" y="15" width="2" height="1" />
+                  <rect x="12" y="15" width="2" height="1" />
+                  <rect x="8" y="16" width="2" height="1" />
+                  <rect x="11" y="16" width="1" height="1" />
+                  <rect x="14" y="16" width="2" height="1" />
+                </g>
+              </svg>
+            </div>
+            <div class="qris-total" id="qrisTotal">Rp 0</div>
+            <div class="qris-note">Scan QR ini dengan aplikasi e-wallet apapun</div>
+            <div class="qris-badges"><span>GoPay</span><span>OVO</span><span>Dana</span> <span>ShopeePay</span><span>LinkAja</span><span>BCA</span></div>
+          </div>
+          <div class="qris-confirm-row">
+            <span style="font-size: 0.78rem; color: var(--text-dim)">Sudah dibayar pelanggan?</span>
+            <button class="btn-konfirmasi-qris" onclick="konfirmasiQRIS()">✅ Konfirmasi Bayar</button>
+          </div>
+        </div>
+
+        <!-- PANEL TRANSFER BANK -->
+        <div id="panel-transfer" class="pay-panel" style="display: none">
+          <div class="transfer-box">
+            <div class="transfer-title">Rekening Tujuan</div>
+            <div class="bank-row">
+              <div class="bank-logo">🏦</div>
+              <div class="bank-info">
+                <div class="bank-name"  id="bank1Name">BCA</div>
+                <div class="bank-norek" id="bank1No">1234 5678 90</div>
+                <div class="bank-atas-nama" id="bank1Owner">a.n. Pemilik Toko</div>
+              </div>
+              <button class="btn-copy-norek" id="bank1CopyBtn" onclick="copyNorek('1234567890', 'BCA')">📋</button>
+            </div>
+            <div class="bank-row">
+              <div class="bank-logo">🏦</div>
+              <div class="bank-info">
+                <div class="bank-name"  id="bank2Name">Mandiri</div>
+                <div class="bank-norek" id="bank2No">0987 6543 210</div>
+                <div class="bank-atas-nama" id="bank2Owner">a.n. Pemilik Toko</div>
+              </div>
+              <button class="btn-copy-norek" id="bank2CopyBtn" onclick="copyNorek('09876543210', 'Mandiri')">📋</button>
+            </div>
+            <div class="transfer-amount-row">
+              <span>Transfer tepat sebesar</span>
+              <span class="transfer-amount" id="transferAmount">Rp 0</span>
+            </div>
+          </div>
+          <div class="qris-confirm-row">
+            <span style="font-size: 0.78rem; color: var(--text-dim)">Transfer sudah masuk?</span>
+            <button class="btn-konfirmasi-qris" onclick="konfirmasiTransfer()">✅ Konfirmasi Terima</button>
+          </div>
+        </div>
+
+        <!-- PANEL EDC -->
+        <div id="panel-edc" class="pay-panel" style="display: none">
+          <div class="edc-box">
+            <div class="edc-icon">💳</div>
+            <div class="edc-title">Pembayaran via EDC</div>
+            <div class="edc-amount" id="edcAmount">Rp 0</div>
+            <div class="edc-steps">
+              <div class="edc-step"><span class="step-num">1</span><span>Masukkan/tap kartu ke mesin EDC</span></div>
+              <div class="edc-step"><span class="step-num">2</span><span>Pelanggan masukkan PIN</span></div>
+              <div class="edc-step"><span class="step-num">3</span><span>Tunggu approval dari bank</span></div>
+              <div class="edc-step"><span class="step-num">4</span><span>Klik Konfirmasi jika approved</span></div>
+            </div>
+          </div>
+          <div class="qris-confirm-row">
+            <span style="font-size: 0.78rem; color: var(--text-dim)">Transaksi EDC approved?</span>
+            <button class="btn-konfirmasi-qris" onclick="konfirmasiEDC()">✅ Konfirmasi Approved</button>
+          </div>
+        </div>
+
+        <!-- Tombol BAYAR — hanya aktif di panel tunai -->
+        <button class="btn-bayar" id="btnBayar" onclick="prosesBayar()" disabled>BAYAR</button>
+      </div>
+    </aside>
+
+    <!-- Toast kecil untuk notifikasi (copy norek, dll) -->
+    <div class="mini-toast" id="miniToast"></div>
+
+    <!-- =============================================
+       MODAL SUKSES BAYAR
+  ============================================= -->
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-box">
+        <div class="modal-icon">✅</div>
+        <div class="modal-title">Pembayaran Berhasil!</div>
+        <div class="modal-detail" id="modalDetail"></div>
+        <div class="modal-kembalian" id="modalKembalian"></div>
+        <button class="btn-modal" style="background: var(--panel); border: 1px solid var(--border); color: var(--text); margin-bottom: 4px" onclick="cetakStruk()">🖨️ Cetak Struk</button>
+        <button class="btn-modal" onclick="tutupModal()">Transaksi Baru →</button>
+      </div>
+    </div>
+
+    <!-- =============================================
+       MODAL SHIFT — buka/tutup/rekap shift
+  ============================================= -->
+    <div class="modal-overlay" id="modalShift" style="z-index: 200">
+      <div class="modal-box" style="width: 380px; text-align: left; gap: 0">
+        <!-- ===== PANEL: BUKA SHIFT ===== -->
+        <div id="shiftPanelBuka">
+          <div style="font-size: 2rem; text-align: center; margin-bottom: 8px">🟢</div>
+          <div style="font-family: var(--font-head); font-size: 1.1rem; font-weight: 800; text-align: center; margin-bottom: 4px">Buka Shift Baru</div>
+          <p style="font-size: 0.8rem; color: var(--text-dim); text-align: center; margin-bottom: 20px">Hitung uang di laci kasir sekarang, lalu masukkan jumlahnya</p>
+          <label style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px"> Modal Awal (Uang di Laci) </label>
+          <input
+            id="openingCashInput"
+            type="number"
+            min="0"
+            placeholder="Contoh: 100000"
+            style="
+              width: 100%;
+              margin-top: 6px;
+              margin-bottom: 16px;
+              background: var(--bg);
+              border: 1px solid var(--border);
+              border-radius: 8px;
+              padding: 10px 12px;
+              color: var(--text);
+              font-family: var(--font-mono);
+              font-size: 0.95rem;
+              outline: none;
+            "
+          />
+          <div style="display: flex; gap: 8px">
+            <button
+              onclick="tutupModalShift()"
+              style="flex: 1; padding: 10px; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-dim); cursor: pointer; font-family: var(--font-ui)"
+            >
+              Batal
+            </button>
+            <button
+              onclick="bukaShift()"
+              style="flex: 2; padding: 10px; background: var(--accent); border: none; border-radius: 8px; color: #0a0a0a; font-family: var(--font-head); font-weight: 800; cursor: pointer"
+            >
+              Mulai Shift →
+            </button>
+          </div>
+        </div>
+
+        <!-- ===== PANEL: SHIFT AKTIF + REKAP ===== -->
+        <div id="shiftPanelAktif" style="display: none">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
+            <div>
+              <div style="font-family: var(--font-head); font-size: 1.1rem; font-weight: 800">Shift Berjalan</div>
+              <div style="font-size: 0.75rem; color: var(--text-dim)" id="shiftOpenedAt"></div>
+            </div>
+            <span style="background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.3); color: #4ade80; font-size: 0.72rem; padding: 3px 10px; border-radius: 20px">● AKTIF</span>
+          </div>
+
+          <!-- Rekap ringkas shift -->
+          <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 14px">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px">
+              <span style="font-size: 0.8rem; color: var(--text-dim)">Modal Awal</span>
+              <span style="font-family: var(--font-mono); font-size: 0.85rem" id="shiftModalAwal">Rp 0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px">
+              <span style="font-size: 0.8rem; color: var(--text-dim)">Transaksi</span>
+              <span style="font-family: var(--font-mono); font-size: 0.85rem" id="shiftJmlTrx">0 transaksi</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px">
+              <span style="font-size: 0.8rem; color: var(--text-dim)">Total Penjualan</span>
+              <span style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent)" id="shiftTotalJual">Rp 0</span>
+            </div>
+            <div style="border-top: 1px solid var(--border); margin: 8px 0"></div>
+            <div style="display: flex; justify-content: space-between">
+              <span style="font-size: 0.8rem; font-weight: 600">Estimasi di Laci</span>
+              <span style="font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; color: var(--accent)" id="shiftEstimasiLaci">Rp 0</span>
+            </div>
+          </div>
+
+          <!-- Daftar transaksi selama shift -->
+          <div style="max-height: 180px; overflow-y: auto; margin-bottom: 14px" id="shiftTrxList"></div>
+
+          <!-- Tombol tutup shift -->
+          <div style="border-top: 1px solid var(--border); padding-top: 14px">
+            <label style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px"> Uang di Laci Sekarang (hitung manual) </label>
+            <input
+              id="closingCashInput"
+              type="number"
+              min="0"
+              placeholder="Masukkan jumlah uang di laci..."
+              style="
+                width: 100%;
+                margin-top: 6px;
+                margin-bottom: 10px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 10px 12px;
+                color: var(--text);
+                font-family: var(--font-mono);
+                font-size: 0.95rem;
+                outline: none;
+              "
+            />
+            <div style="display: flex; gap: 8px">
+              <button
+                onclick="tutupModalShift()"
+                style="flex: 1; padding: 10px; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-dim); cursor: pointer; font-family: var(--font-ui)"
+              >
+                Tutup
+              </button>
+              <button
+                onclick="tutupShift()"
+                style="flex: 2; padding: 10px; background: #ef4444; border: none; border-radius: 8px; color: white; font-family: var(--font-head); font-weight: 800; cursor: pointer"
+              >
+                🔴 Tutup Shift
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =============================================
+       MODAL STOK MENIPIS
+  ============================================= -->
+    <div class="modal-overlay" id="modalStokAlert" style="z-index: 200">
+      <div class="modal-box" style="width: 360px; text-align: left">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <div style="font-family: var(--font-head); font-size: 1rem; font-weight: 800">⚠️ Stok Menipis</div>
+          <button onclick="document.getElementById('modalStokAlert').classList.remove('active')" style="background: none; border: none; color: var(--text-dim); font-size: 1.2rem; cursor: pointer">
+            ✕
+          </button>
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-dim); margin-bottom: 4px">Produk berikut stoknya sudah menipis. Segera hubungi admin untuk restock.</p>
+        <div id="stokAlertList" style="display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto"></div>
+        <button
+          onclick="document.getElementById('modalStokAlert').classList.remove('active')"
+          style="
+            width: 100%;
+            padding: 10px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--font-ui);
+            cursor: pointer;
+            margin-top: 4px;
+          "
+        >
+          Mengerti
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // =============================================
+      // KONFIGURASI API
+      // Ganti URL ini jika backend berjalan di port/host lain
+      // =============================================
+      const API_URL = "http://localhost:3000/api";
+
+      // Warna kartu per kategori
+      const CATEGORY_COLORS = {
+        Makanan: "#ffb74d",
+        Minuman: "#4fc3f7",
+        Snack: "#fff176",
+        Lainnya: "#ce93d8",
+      };
+
+      let ALL_PRODUCTS = [];
+
+      // =============================================
+      // AUTH — Ambil token dari localStorage
+      // Jika tidak ada, redirect ke halaman login
+      // =============================================
+      const TOKEN = localStorage.getItem("pos_token");
+      const USER = JSON.parse(localStorage.getItem("pos_user") || "null");
+
+      if (!TOKEN || !USER) {
+        // Belum login — arahkan ke login
+        window.location.href = "login.html";
+      }
+
+      // Fungsi helper: tambahkan Authorization header ke setiap fetch
+      function authHeaders() {
+        return {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${TOKEN}`,
+        };
+      }
+
+      // Tampilkan nama kasir di header
+      document.addEventListener("DOMContentLoaded", () => {
+        const el = document.querySelector(".store-name");
+        if (el && USER) el.textContent = `Kasir: ${USER.name}`;
+      });
+
+      // =============================================
+      // LOGOUT
+      // =============================================
+      function logout() {
+        localStorage.removeItem("pos_token");
+        localStorage.removeItem("pos_user");
+        window.location.href = "login.html";
+      }
+
+      // Data transaksi terakhir — disimpan untuk keperluan cetak struk
+      let lastTransaction = null;
+
+      // =============================================
+      // STATE APLIKASI
+      // Menyimpan data transaksi yang sedang berjalan
+      // =============================================
+      let cart = {}; // { productId: { ...product, qty } }
+      let txnCounter = 1; // Nomor urut transaksi
+
+      // =============================================
+      // FUNGSI JAM REAL-TIME
+      // =============================================
+      function updateClock() {
+        const now = new Date();
+        // Format: HH:MM:SS dengan padding 0 di depan jika perlu
+        const jam = String(now.getHours()).padStart(2, "0");
+        const mnt = String(now.getMinutes()).padStart(2, "0");
+        const dtk = String(now.getSeconds()).padStart(2, "0");
+        document.getElementById("clock").textContent = `${jam}:${mnt}:${dtk}`;
+      }
+      setInterval(updateClock, 1000); // Update setiap 1 detik
+      updateClock(); // Langsung panggil sekali saat load
+
+      // =============================================
+      // FETCH PRODUK DARI BACKEND API
+      // Dipanggil saat halaman pertama load
+      // =============================================
+      async function fetchProducts() {
+        const grid = document.getElementById("productGrid");
+
+        // Tampilkan loading sementara data diambil
+        grid.innerHTML = `<div style="color:var(--text-dim);font-size:0.85rem;padding:16px">
+        ⏳ Memuat produk...
+      </div>`;
+
+        try {
+          // Kirim GET request ke backend
+          // Sertakan token JWT di header request
+          const res = await fetch(`${API_URL}/products`, { headers: authHeaders() });
+
+          // Jika 401/403, token expired — paksa logout
+          if (res.status === 401 || res.status === 403) {
+            logout();
+            return;
+          }
+
+          const data = await res.json();
+
+          // Simpan ke variabel global untuk filter pencarian
+          ALL_PRODUCTS = data;
+
+          renderProducts(ALL_PRODUCTS);
+        } catch (err) {
+          // Tampilkan error jika backend tidak bisa diakses
+          grid.innerHTML = `<div style="color:#ff4444;font-size:0.85rem;padding:16px">
+          ❌ Gagal konek ke server.<br>Pastikan backend berjalan di port 3000.
+        </div>`;
+          console.error("Fetch produk gagal:", err);
+        }
+      }
+
+      // =============================================
+      // RENDER GRID PRODUK
+      // Membuat kartu dari data yang sudah di-fetch
+      // =============================================
+      function renderProducts(list = ALL_PRODUCTS) {
+        const grid = document.getElementById("productGrid");
+        grid.innerHTML = "";
+
+        if (list.length === 0) {
+          grid.innerHTML = `<div style="color:var(--text-dim);font-size:0.85rem;padding:16px">
+          Produk tidak ditemukan.
+        </div>`;
+          return;
+        }
+
+        list.forEach((p) => {
+          // Tentukan warna kartu berdasarkan kategori produk
+          const color = CATEGORY_COLORS[p.category] || "#888";
+
+          const card = document.createElement("div");
+          card.className = "product-card";
+          card.style.setProperty("--card-color", color);
+          card.onclick = () => addToCart(p); // Klik kartu = tambah ke keranjang
+          card.innerHTML = `
+          <span class="icon">${p.icon}</span>
+          <span class="name">${p.name}</span>
+          <span class="price">${formatRupiah(p.price)}</span>
+          <span class="stock">Stok: ${p.stock}</span>
+        `;
+          grid.appendChild(card);
+        });
+      }
+
+      // =============================================
+      // FILTER PRODUK BERDASARKAN PENCARIAN
+      // Dijalankan setiap kali ada input di search box
+      // =============================================
+      function filterProducts() {
+        const keyword = document.getElementById("searchInput").value.toLowerCase();
+        // Filter dari ALL_PRODUCTS (data asli dari API), bukan data hardcode
+        const filtered = ALL_PRODUCTS.filter((p) => p.name.toLowerCase().includes(keyword));
+        renderProducts(filtered);
+      }
+
+      // =============================================
+      // TAMBAH PRODUK KE KERANJANG
+      // Jika sudah ada, tambah qty; jika baru, buat entry baru
+      // =============================================
+      function addToCart(product) {
+        if (cart[product.id]) {
+          // Produk sudah ada → tambah quantity
+          cart[product.id].qty += 1;
+        } else {
+          // Produk baru → buat entry dengan qty = 1
+          cart[product.id] = { ...product, qty: 1 };
+        }
+        renderCart();
+      }
+
+      // =============================================
+      // UBAH QUANTITY ITEM DI KERANJANG
+      // delta: +1 untuk tambah, -1 untuk kurang
+      // =============================================
+      function changeQty(productId, delta) {
+        if (!cart[productId]) return;
+
+        cart[productId].qty += delta;
+
+        // Jika qty sampai 0, hapus item dari keranjang
+        if (cart[productId].qty <= 0) {
+          delete cart[productId];
+        }
+
+        renderCart();
+      }
+
+      // =============================================
+      // HITUNG SUBTOTAL (sebelum diskon)
+      // =============================================
+      // =============================================
+      // KALKULASI MURNI — tidak update UI, tidak panggil fungsi lain
+      // Aman dipanggil dari mana saja tanpa risiko loop
+      // =============================================
+
+      // Jumlah semua item sebelum diskon
+      function hitungSubtotal() {
+        return Object.values(cart).reduce((sum, item) => sum + item.price * item.qty, 0);
+      }
+
+      // Nilai diskon dalam rupiah (kalkulasi murni)
+      function hitungNilaiDiskon() {
+        const type = document.getElementById("discountType").value;
+        const val = parseFloat(document.getElementById("discountValue").value) || 0;
+        const sub = hitungSubtotal();
+        if (type === "percent") return Math.round((sub * Math.min(val, 100)) / 100);
+        if (type === "nominal") return Math.min(val, sub);
+        return 0;
+      }
+
+      // Total akhir setelah diskon (kalkulasi murni)
+      // PENTING: tidak boleh panggil hitungDiskon() — itu yang bikin loop!
+      function hitungTotal() {
+        return hitungSubtotal() - hitungNilaiDiskon();
+      }
+
+      // =============================================
+      // UPDATE UI DISKON
+      // Dipanggil hanya dari onchange/oninput elemen diskon
+      // Boleh panggil updateKembalian karena updateKembalian
+      // hanya pakai hitungTotal() yang sudah aman
+      // =============================================
+      function hitungDiskon() {
+        const type = document.getElementById("discountType").value;
+        const input = document.getElementById("discountValue");
+        const sub = hitungSubtotal();
+        const val = parseFloat(input.value) || 0;
+
+        // Tampilkan/sembunyikan input nilai diskon
+        input.style.display = type === "none" ? "none" : "inline-block";
+        if (type === "none") input.value = "";
+
+        // Hitung & tampilkan label diskon
+        const diskon = hitungNilaiDiskon();
+        if (type === "percent") {
+          document.getElementById("discountVal").textContent = `– ${formatRupiah(diskon)} (${val}%)`;
+        } else if (type === "nominal") {
+          document.getElementById("discountVal").textContent = `– ${formatRupiah(diskon)}`;
+        } else {
+          document.getElementById("discountVal").textContent = "– Rp 0";
+        }
+
+        // Update tampilan total
+        document.getElementById("totalVal").textContent = formatRupiah(sub - diskon);
+
+        // Aman: updateKembalian → hitungTotal → hitungNilaiDiskon (berhenti di sini)
+        updateKembalian();
+      }
+
+      // =============================================
+      // RENDER KERANJANG
+      // Memperbarui tampilan panel kasir setiap ada perubahan
+      // =============================================
+      function renderCart() {
+        const container = document.getElementById("cartItems");
+        const cartEmpty = document.getElementById("cartEmpty");
+        const cartSummary = document.getElementById("cartSummary");
+        const items = Object.values(cart);
+
+        // Tampilkan pesan kosong jika tidak ada item
+        cartEmpty.style.display = items.length === 0 ? "flex" : "none";
+        cartSummary.style.display = items.length === 0 ? "none" : "flex";
+
+        // Hapus item lama dari DOM, sisakan elemen cartEmpty
+        Array.from(container.children).forEach((child) => {
+          if (child.id !== "cartEmpty") container.removeChild(child);
+        });
+
+        // Render setiap item keranjang
+        items.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "cart-item";
+          div.innerHTML = `
+          <div>
+            <div class="item-name">${item.icon} ${item.name}</div>
+            <div class="item-sub">${formatRupiah(item.price)} × ${item.qty}</div>
+          </div>
+          <div class="qty-control">
+            <!-- Tombol kurangi qty — jika qty=1 maka item akan dihapus -->
+            <button class="qty-btn minus" onclick="changeQty(${item.id}, -1)">−</button>
+            <span class="qty-num">${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty(${item.id}, +1)">+</button>
+          </div>
+          <div class="item-price">${formatRupiah(item.price * item.qty)}</div>
+        `;
+          container.appendChild(div);
+        });
+
+        // Update nilai subtotal di ringkasan
+        const subtotal = hitungSubtotal();
+        document.getElementById("subtotalVal").textContent = formatRupiah(subtotal);
+
+        // Reset diskon dan total
+        document.getElementById("discountType").value = "none";
+        document.getElementById("discountValue").style.display = "none";
+        document.getElementById("discountValue").value = "";
+        document.getElementById("discountVal").textContent = "– Rp 0";
+        document.getElementById("totalVal").textContent = formatRupiah(subtotal);
+
+        // Reset input bayar dan kembalian
+        document.getElementById("payInput").value = "";
+        document.getElementById("kembalianRow").style.display = "none";
+        document.getElementById("btnBayar").disabled = true;
+
+        // Update nominal di panel QRIS/Transfer/EDC
+        updateNominalPanel();
+      }
+
+      // =============================================
+      // SET NOMINAL BAYAR DARI TOMBOL CEPAT
+      // =============================================
+      function setPayAmount(amount) {
+        document.getElementById("payInput").value = amount;
+        updateKembalian();
+      }
+
+      // Tombol "Pas" = isi dengan nilai tepat sesuai total
+      function setExact() {
+        const total = hitungTotal();
+        setPayAmount(total);
+      }
+
+      // =============================================
+      // UPDATE KEMBALIAN
+      // Dijalankan setiap input nominal bayar berubah
+      // =============================================
+      function updateKembalian() {
+        const payInput = document.getElementById("payInput");
+        const kembalianRow = document.getElementById("kembalianRow");
+        const kembalianLabel = document.getElementById("kembalianLabel");
+        const kembalianVal = document.getElementById("kembalianVal");
+        const btnBayar = document.getElementById("btnBayar");
+
+        const bayar = parseInt(payInput.value) || 0;
+        const total = hitungTotal();
+
+        if (bayar > 0 && total > 0) {
+          const kembalian = bayar - total;
+          kembalianRow.style.display = "flex";
+
+          if (kembalian >= 0) {
+            // Bayar cukup atau lebih
+            kembalianRow.className = "kembalian-row";
+            kembalianLabel.textContent = "Kembalian";
+            kembalianVal.textContent = formatRupiah(kembalian);
+            btnBayar.disabled = false; // Aktifkan tombol bayar
+          } else {
+            // Bayar kurang
+            kembalianRow.className = "kembalian-row kurang";
+            kembalianLabel.textContent = "Kurang";
+            kembalianVal.textContent = formatRupiah(Math.abs(kembalian));
+            btnBayar.disabled = true; // Nonaktifkan tombol bayar
+          }
+        } else {
+          kembalianRow.style.display = "none";
+          btnBayar.disabled = true;
+        }
+      }
+
+      // =============================================
+      // PROSES PEMBAYARAN
+      // Kirim data transaksi ke backend, lalu tampilkan modal
+      // =============================================
+      async function prosesBayar() {
+        const bayar = parseInt(document.getElementById("payInput").value) || 0;
+        const subtotal = hitungSubtotal();
+        const diskonType = document.getElementById("discountType").value;
+        const diskonVal = parseFloat(document.getElementById("discountValue").value) || 0;
+
+        // Hitung diskon dan total
+        let diskonAmount = 0;
+        if (diskonType === "percent") diskonAmount = Math.round((subtotal * Math.min(diskonVal, 100)) / 100);
+        if (diskonType === "nominal") diskonAmount = Math.min(diskonVal, subtotal);
+        const total = subtotal - diskonAmount;
+        const kembalian = bayar - total;
+
+        const items = Object.values(cart);
+        const jumlahItem = items.reduce((s, i) => s + i.qty, 0);
+
+        const btnBayar = document.getElementById("btnBayar");
+        btnBayar.disabled = true;
+        btnBayar.textContent = "Memproses...";
+
+        try {
+          // Pakai endpoint v2 yang support diskon
+          const res = await fetch(`${API_URL}/transactions/v2`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              paid_amount: bayar,
+              discount_type: diskonType,
+              discount_value: diskonVal,
+              items: items.map((i) => ({
+                product_id: i.id,
+                product_name: i.name,
+                price: i.price,
+                quantity: i.qty,
+              })),
+            }),
+          });
+
+          const result = await res.json();
+          if (!res.ok) throw new Error(result.error);
+
+          // Simpan data untuk struk
+          lastTransaction = {
+            invoice_no: result.invoice_no,
+            kasir: USER.name,
+            items,
+            subtotal,
+            diskon: diskonAmount,
+            diskonLabel: diskonType === "percent" ? `Diskon ${diskonVal}%` : "Diskon",
+            total,
+            bayar,
+            kembalian,
+            waktu: new Date().toLocaleString("id-ID"),
+          };
+
+          document.getElementById("modalDetail").innerHTML = `
+          ${result.invoice_no}<br>
+          Total: ${formatRupiah(total)}<br>
+          Bayar: ${formatRupiah(bayar)}<br>
+          ${jumlahItem} item${diskonAmount > 0 ? `<br>Diskon: ${formatRupiah(diskonAmount)}` : ""}
+        `;
+          document.getElementById("modalKembalian").textContent = kembalian > 0 ? `Kembalian: ${formatRupiah(kembalian)}` : "Pas ✓";
+
+          document.getElementById("modalOverlay").classList.add("active");
+        } catch (err) {
+          alert("❌ Transaksi gagal: " + err.message);
+          console.error(err);
+        } finally {
+          btnBayar.textContent = "BAYAR";
+          btnBayar.disabled = false;
+        }
+      }
+
+      // =============================================
+      // TUTUP MODAL DAN MULAI TRANSAKSI BARU
+      // =============================================
+      function tutupModal() {
+        document.getElementById("modalOverlay").classList.remove("active");
+        clearCart();
+
+        // Naikkan nomor transaksi di UI
+        txnCounter++;
+        document.getElementById("txnId").textContent = `#TXN-${String(txnCounter).padStart(4, "0")}`;
+
+        // Refresh produk agar stok yang tampil ikut terupdate
+        fetchProducts();
+      }
+
+      // =============================================
+      // RESET / CLEAR KERANJANG
+      // =============================================
+      function clearCart() {
+        cart = {};
+        document.getElementById("payInput").value = "";
+        renderCart();
+      }
+
+      // =============================================
+      // FORMAT ANGKA KE RUPIAH
+      // Contoh: 15000 → "Rp 15.000"
+      // =============================================
+      function formatRupiah(angka) {
+        return "Rp " + angka.toLocaleString("id-ID");
+      }
+
+      // =============================================
+      // CETAK STRUK
+      // Membuka jendela print browser dengan tampilan struk
+      // yang sudah diformat khusus untuk printer thermal
+      // =============================================
+      function cetakStruk() {
+        if (!lastTransaction) return;
+
+        const t = lastTransaction;
+
+        // Buat baris item struk
+        const itemsHTML = t.items
+          .map(
+            (i) => `
+        <tr>
+          <td>${i.icon || ""} ${i.name}</td>
+          <td class="right">${i.qty}x</td>
+          <td class="right">Rp ${(i.price * i.qty).toLocaleString("id-ID")}</td>
+        </tr>
+      `,
+          )
+          .join("");
+
+        // HTML struk — didesain untuk lebar 80mm (printer thermal standar)
+        const struk = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8"/>
+          <title>Struk ${t.invoice_no}</title>
+          <style>
+            /* Reset dan base untuk struk */
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+
+            body {
+              font-family: 'Courier New', monospace;
+              font-size: 12px;
+              width: 80mm;         /* Lebar kertas thermal standar */
+              margin: 0 auto;
+              padding: 8px;
+              color: #000;
+            }
+
+            /* Header toko */
+            .header { text-align: center; margin-bottom: 10px; }
+            .header h1 { font-size: 16px; font-weight: bold; }
+            .header p  { font-size: 10px; color: #555; }
+
+            /* Garis pemisah */
+            .divider { border-top: 1px dashed #000; margin: 6px 0; }
+
+            /* Info transaksi */
+            .info-row { display: flex; justify-content: space-between; font-size: 10px; margin: 2px 0; }
+
+            /* Tabel item */
+            table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+            td { padding: 2px 0; font-size: 11px; vertical-align: top; }
+            .right { text-align: right; }
+
+            /* Ringkasan pembayaran */
+            .summary { margin-top: 4px; }
+            .sum-row { display: flex; justify-content: space-between; font-size: 11px; margin: 2px 0; }
+            .sum-row.total { font-weight: bold; font-size: 13px; margin-top: 4px; }
+            .sum-row.kembalian { font-weight: bold; }
+
+            /* Footer */
+            .footer { text-align: center; font-size: 10px; color: #555; margin-top: 10px; }
+
+            /* Sembunyikan elemen browser saat print */
+            @media print {
+              body { width: 80mm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>⚡ KASIR</h1>
+            <p>${window._settings?.store_name    || 'Nama Toko'}</p>
+            <p>${window._settings?.store_address || ''}</p>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Info nomor invoice, kasir, waktu -->
+          <div class="info-row"><span>Invoice</span> <span>${t.invoice_no}</span></div>
+          <div class="info-row"><span>Kasir</span>   <span>${t.kasir}</span></div>
+          <div class="info-row"><span>Waktu</span>   <span>${t.waktu}</span></div>
+
+          <div class="divider"></div>
+
+          <!-- Daftar item yang dibeli -->
+          <table>
+            <tbody>${itemsHTML}</tbody>
+          </table>
+
+          <div class="divider"></div>
+
+          <!-- Ringkasan pembayaran -->
+          <div class="summary">
+            <div class="sum-row">
+              <span>Subtotal</span>
+              <span>Rp ${t.subtotal.toLocaleString("id-ID")}</span>
+            </div>
+            ${
+              t.diskon > 0
+                ? `
+            <div class="sum-row">
+              <span>${t.diskonLabel}</span>
+              <span>- Rp ${t.diskon.toLocaleString("id-ID")}</span>
+            </div>`
+                : ""
+            }
+            <div class="sum-row total">
+              <span>TOTAL</span>
+              <span>Rp ${t.total.toLocaleString("id-ID")}</span>
+            </div>
+            <div class="sum-row">
+              <span>Bayar</span>
+              <span>Rp ${t.bayar.toLocaleString("id-ID")}</span>
+            </div>
+            <div class="sum-row kembalian">
+              <span>Kembalian</span>
+              <span>Rp ${t.kembalian.toLocaleString("id-ID")}</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="footer">
+            <p>${window._settings?.store_tagline   || 'Terima kasih sudah berbelanja!'}</p>
+            <p>${window._settings?.receipt_footer  || ''}</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+        // Buka jendela baru khusus untuk struk lalu langsung print
+        const win = window.open("", "_blank", "width=400,height=600");
+        win.document.write(struk);
+        win.document.close();
+        win.focus();
+
+        // Delay sedikit agar halaman selesai render sebelum dialog print muncul
+        setTimeout(() => win.print(), 300);
+      }
+
+      // =============================================
+      // STATE SHIFT
+      // =============================================
+      let shiftAktif = null; // Menyimpan data shift yang sedang berjalan
+
+      // =============================================
+      // CEK SHIFT AKTIF
+      // Dipanggil saat halaman pertama dibuka
+      // Menentukan apakah kasir sudah buka shift atau belum
+      // =============================================
+      async function cekShiftAktif() {
+        try {
+          const res = await fetch(`${API_URL}/shifts/active`, { headers: authHeaders() });
+          if (res.status === 401 || res.status === 403) {
+            logout();
+            return;
+          }
+
+          shiftAktif = await res.json(); // null jika belum ada shift
+
+          updateShiftIndicator();
+
+          // Jika belum ada shift aktif, paksa kasir buka shift dulu
+          if (!shiftAktif) {
+            bukaModalShift();
+          }
+        } catch (err) {
+          console.error("Gagal cek shift:", err);
+          updateShiftIndicator();
+        }
+      }
+
+      // =============================================
+      // UPDATE INDIKATOR SHIFT DI HEADER
+      // =============================================
+      function updateShiftIndicator() {
+        const dot = document.getElementById("shiftDot");
+        const text = document.getElementById("shiftText");
+
+        if (shiftAktif) {
+          dot.style.background = "#4ade80"; // Hijau = shift aktif
+          text.textContent = `Shift aktif · ${new Date(shiftAktif.opened_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
+          document.getElementById("shiftIndicator").style.borderColor = "rgba(74,222,128,0.3)";
+          document.getElementById("shiftIndicator").style.color = "#4ade80";
+        } else {
+          dot.style.background = "#ef4444"; // Merah = belum buka shift
+          text.textContent = "Shift belum dibuka";
+          document.getElementById("shiftIndicator").style.borderColor = "rgba(239,68,68,0.3)";
+          document.getElementById("shiftIndicator").style.color = "#ef4444";
+        }
+      }
+
+      // =============================================
+      // BUKA MODAL SHIFT
+      // Menampilkan panel buka atau panel aktif sesuai status
+      // =============================================
+      async function bukaModalShift() {
+        document.getElementById("modalShift").classList.add("active");
+
+        if (shiftAktif) {
+          // Tampilkan panel shift aktif + ambil rekap
+          document.getElementById("shiftPanelBuka").style.display = "none";
+          document.getElementById("shiftPanelAktif").style.display = "block";
+          await muatRekapShift();
+        } else {
+          // Tampilkan panel buka shift baru
+          document.getElementById("shiftPanelBuka").style.display = "block";
+          document.getElementById("shiftPanelAktif").style.display = "none";
+          document.getElementById("openingCashInput").value = "";
+        }
+      }
+
+      function tutupModalShift() {
+        document.getElementById("modalShift").classList.remove("active");
+      }
+
+      // =============================================
+      // MUAT REKAP SHIFT AKTIF
+      // Ambil data transaksi selama shift berjalan
+      // =============================================
+      async function muatRekapShift() {
+        try {
+          const res = await fetch(`${API_URL}/shifts/active/summary`, { headers: authHeaders() });
+          const data = await res.json();
+          if (!data.shift) return;
+
+          // Isi info shift
+          document.getElementById("shiftOpenedAt").textContent = "Dibuka: " + new Date(data.shift.opened_at).toLocaleString("id-ID");
+          document.getElementById("shiftModalAwal").textContent = formatRupiah(data.shift.opening_cash);
+          document.getElementById("shiftJmlTrx").textContent = `${data.summary.total_transactions} transaksi`;
+          document.getElementById("shiftTotalJual").textContent = formatRupiah(data.summary.total_penjualan);
+          document.getElementById("shiftEstimasiLaci").textContent = formatRupiah(data.summary.uang_di_laci);
+
+          // Isi daftar transaksi
+          const list = document.getElementById("shiftTrxList");
+          if (data.transactions.length === 0) {
+            list.innerHTML = `<div style="font-size:0.78rem;color:var(--text-dim);text-align:center;padding:10px">
+            Belum ada transaksi di shift ini
+          </div>`;
+          } else {
+            list.innerHTML = data.transactions
+              .map(
+                (t) => `
+            <div style="display:flex;justify-content:space-between;font-size:0.78rem;
+              padding:6px 8px;background:var(--bg);border-radius:6px;margin-bottom:4px">
+              <span style="color:var(--accent);font-family:var(--font-mono)">${t.invoice_no}</span>
+              <span style="color:var(--text-dim)">${new Date(t.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</span>
+              <span style="font-family:var(--font-mono)">${formatRupiah(Number(t.total_amount))}</span>
+            </div>
+          `,
+              )
+              .join("");
+          }
+        } catch (err) {
+          console.error("Gagal muat rekap shift:", err);
+        }
+      }
+
+      // =============================================
+      // BUKA SHIFT BARU
+      // =============================================
+      async function bukaShift() {
+        const openingCash = parseInt(document.getElementById("openingCashInput").value) || 0;
+
+        try {
+          const res = await fetch(`${API_URL}/shifts/open`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({ opening_cash: openingCash }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error);
+
+          showMiniToast("✅ Shift berhasil dibuka!");
+          shiftAktif = { id: data.shift_id, opened_at: data.opened_at, opening_cash: openingCash };
+          updateShiftIndicator();
+          tutupModalShift();
+        } catch (err) {
+          showMiniToast("❌ " + err.message);
+        }
+      }
+
+      // =============================================
+      // TUTUP SHIFT
+      // =============================================
+      async function tutupShift() {
+        if (!shiftAktif) return;
+        const closingCash = parseInt(document.getElementById("closingCashInput").value) || 0;
+
+        if (!confirm("Yakin ingin menutup shift sekarang?")) return;
+
+        try {
+          const res = await fetch(`${API_URL}/shifts/close`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({ shift_id: shiftAktif.id, closing_cash: closingCash }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error);
+
+          // Tampilkan rekap penutupan
+          alert(
+            `✅ Shift ditutup!\n\n` +
+              `Total Transaksi : ${data.total_transactions}\n` +
+              `Total Penjualan : ${formatRupiah(data.total_penjualan)}\n` +
+              `Uang di Laci    : ${formatRupiah(closingCash)}\n` +
+              `Selisih         : ${formatRupiah(data.selisih)}`,
+          );
+
+          shiftAktif = null;
+          updateShiftIndicator();
+          tutupModalShift();
+
+          // Kasir harus buka shift baru untuk lanjut transaksi
+          setTimeout(() => bukaModalShift(), 400);
+        } catch (err) {
+          showMiniToast("❌ " + err.message);
+        }
+      }
+
+      // =============================================
+      // CEK STOK MENIPIS
+      // Polling setiap 5 menit — tampilkan badge di header
+      // =============================================
+      async function cekStokMenipis() {
+        try {
+          const res = await fetch(`${API_URL}/products/low-stock?threshold=5`, { headers: authHeaders() });
+          const data = await res.json();
+
+          const badge = document.getElementById("stockAlert");
+          const count = document.getElementById("stockAlertCount");
+
+          if (data.length > 0) {
+            // Ada produk hampir habis — tampilkan badge
+            badge.style.display = "block";
+            count.textContent = data.length;
+
+            // Simpan data untuk ditampilkan di modal
+            window._lowStockData = data;
+          } else {
+            badge.style.display = "none";
+            window._lowStockData = [];
+          }
+        } catch (err) {
+          console.error("Gagal cek stok:", err);
+        }
+      }
+
+      // =============================================
+      // BUKA MODAL DAFTAR STOK MENIPIS
+      // =============================================
+      function bukaModalStokAlert() {
+        const list = document.getElementById("stokAlertList");
+        const data = window._lowStockData || [];
+
+        list.innerHTML = data
+          .map(
+            (p) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;
+          padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+          <span style="font-size:0.9rem">${p.icon || "📦"} ${p.name}</span>
+          <span style="
+            font-family:var(--font-mono);font-size:0.82rem;padding:2px 10px;border-radius:20px;
+            ${
+              p.stock === 0
+                ? "background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3)"
+                : "background:rgba(251,146,60,0.1);color:#fb923c;border:1px solid rgba(251,146,60,0.3)"
+            }
+          ">
+            ${p.stock === 0 ? "⛔ Habis" : `Sisa ${p.stock}`}
+          </span>
+        </div>
+      `,
+          )
+          .join("");
+
+        document.getElementById("modalStokAlert").classList.add("active");
+      }
+
+      // =============================================
+      // PAYMENT METHOD STATE & FUNCTIONS
+      // =============================================
+      let metodeBayar = "tunai";
+
+      // Ganti panel yang tampil sesuai metode dipilih
+      function pilihMetode(metode) {
+        metodeBayar = metode;
+        document.querySelectorAll(".pay-method-btn").forEach((b) => b.classList.remove("active"));
+        document.getElementById(`pm-${metode}`).classList.add("active");
+        document.querySelectorAll(".pay-panel").forEach((p) => (p.style.display = "none"));
+        document.getElementById(`panel-${metode}`).style.display = "flex";
+
+        // Tombol BAYAR hanya muncul di panel tunai
+        // Panel lain punya tombol Konfirmasi sendiri
+        const btnBayar = document.getElementById("btnBayar");
+        btnBayar.style.display = metode === "tunai" ? "block" : "none";
+
+        updateNominalPanel();
+      }
+
+      // Update nominal di panel QRIS/Transfer/EDC setiap cart berubah
+      function updateNominalPanel() {
+        const total = hitungTotal();
+        const fmt = formatRupiah(total);
+        const qrisTotal = document.getElementById("qrisTotal");
+        const transferAmt = document.getElementById("transferAmount");
+        const edcAmt = document.getElementById("edcAmount");
+        if (qrisTotal) qrisTotal.textContent = fmt;
+        if (transferAmt) transferAmt.textContent = fmt;
+        if (edcAmt) edcAmt.textContent = fmt;
+      }
+
+      // Konfirmasi QRIS — kasir klik setelah pelanggan scan
+      function konfirmasiQRIS() {
+        const total = hitungTotal();
+        if (total === 0) {
+          showMiniToast("⚠️ Keranjang kosong!");
+          return;
+        }
+        prosesNonTunai("QRIS", total);
+      }
+
+      // Konfirmasi Transfer — kasir klik setelah cek mutasi
+      function konfirmasiTransfer() {
+        const total = hitungTotal();
+        if (total === 0) {
+          showMiniToast("⚠️ Keranjang kosong!");
+          return;
+        }
+        prosesNonTunai("Transfer Bank", total);
+      }
+
+      // Konfirmasi EDC — kasir klik setelah slip EDC keluar
+      function konfirmasiEDC() {
+        const total = hitungTotal();
+        if (total === 0) {
+          showMiniToast("⚠️ Keranjang kosong!");
+          return;
+        }
+        prosesNonTunai("EDC/Kartu", total);
+      }
+
+      // Proses transaksi non-tunai (paid = total, kembalian = 0)
+      async function prosesNonTunai(namaMetode, total) {
+        const items = Object.values(cart);
+        const subtotal = hitungSubtotal();
+        const diskonType = document.getElementById("discountType").value;
+        const diskonVal = parseFloat(document.getElementById("discountValue").value) || 0;
+        const diskonAmount = hitungNilaiDiskon();
+        const jumlahItem = items.reduce((s, i) => s + i.qty, 0);
+
+        // Disable tombol konfirmasi sementara
+        document.querySelectorAll(".btn-konfirmasi-qris").forEach((b) => {
+          b.disabled = true;
+          b.textContent = "Memproses...";
+        });
+
+        try {
+          const res = await fetch(`${API_URL}/transactions/v2`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              paid_amount: total,
+              discount_type: diskonType,
+              discount_value: diskonVal,
+              items: items.map((i) => ({
+                product_id: i.id,
+                product_name: i.name,
+                price: i.price,
+                quantity: i.qty,
+              })),
+            }),
+          });
+
+          const result = await res.json();
+          if (!res.ok) throw new Error(result.error);
+
+          // Simpan untuk struk
+          lastTransaction = {
+            invoice_no: result.invoice_no,
+            kasir: USER.name,
+            metode: namaMetode,
+            items,
+            subtotal,
+            diskon: diskonAmount,
+            diskonLabel: diskonType === "percent" ? `Diskon ${diskonVal}%` : "Diskon",
+            total,
+            bayar: total,
+            kembalian: 0,
+            waktu: new Date().toLocaleString("id-ID"),
+          };
+
+          document.getElementById("modalDetail").innerHTML = `
+          ${result.invoice_no}<br>
+          Metode: <strong>${namaMetode}</strong><br>
+          Total: ${formatRupiah(total)}<br>
+          ${jumlahItem} item
+        `;
+          document.getElementById("modalKembalian").textContent = `${namaMetode} ✓`;
+          document.getElementById("modalOverlay").classList.add("active");
+        } catch (err) {
+          showMiniToast("❌ Transaksi gagal: " + err.message);
+        } finally {
+          // Kembalikan teks tombol konfirmasi
+          const labels = { qris: "✅ Konfirmasi Bayar", transfer: "✅ Konfirmasi Terima", edc: "✅ Konfirmasi Approved" };
+          document.querySelectorAll(".btn-konfirmasi-qris").forEach((b) => {
+            b.disabled = false;
+            b.textContent = labels[metodeBayar] || "✅ Konfirmasi";
+          });
+        }
+      }
+
+      // Copy nomor rekening ke clipboard
+      function copyNorek(norek, bank) {
+        navigator.clipboard.writeText(norek).then(() => showMiniToast(`✅ No. rek ${bank} disalin!`));
+      }
+
+      // Mini toast notifikasi
+      function showMiniToast(msg) {
+        const el = document.getElementById("miniToast");
+        el.textContent = msg;
+        el.classList.add("show");
+        setTimeout(() => el.classList.remove("show"), 2500);
+      }
+
+      // =============================================
+      // INISIALISASI APLIKASI
+      // =============================================
+      // LOAD SETTINGS TOKO
+      // Fetch dari /api/settings dan terapkan ke UI:
+      // nama toko di header, rekening bank di panel transfer,
+      // dan struk saat cetak (via window._settings)
+      // =============================================
+      async function loadSettings() {
+        try {
+          const res  = await fetch(`${API_URL}/settings`, { headers: { Authorization: `Bearer ${TOKEN}` } });
+          const data = await res.json();
+          if (!res.ok) return;
+
+          // Simpan global agar bisa dipakai di cetakStruk()
+          window._settings = data;
+
+          // Nama toko di header kasir
+          const elNama = document.getElementById('storeName');
+          if (elNama && data.store_name) elNama.textContent = data.store_name;
+
+          // Panel transfer — bank 1
+          if (data.bank1_name) {
+            document.getElementById('bank1Name').textContent  = data.bank1_name;
+            document.getElementById('bank1No').textContent    = data.bank1_no   || '–';
+            document.getElementById('bank1Owner').textContent = 'a.n. ' + (data.bank1_owner || '–');
+            // Update fungsi copy dengan nomor rekening terbaru
+            document.getElementById('bank1CopyBtn').onclick   = () => copyNorek(data.bank1_no, data.bank1_name);
+          }
+
+          // Panel transfer — bank 2
+          if (data.bank2_name) {
+            document.getElementById('bank2Name').textContent  = data.bank2_name;
+            document.getElementById('bank2No').textContent    = data.bank2_no   || '–';
+            document.getElementById('bank2Owner').textContent = 'a.n. ' + (data.bank2_owner || '–');
+            document.getElementById('bank2CopyBtn').onclick   = () => copyNorek(data.bank2_no, data.bank2_name);
+          }
+
+        } catch (err) {
+          console.warn('[Settings] Gagal load settings:', err.message);
+        }
+      }
+
+      // =============================================
+      // INISIALISASI APLIKASI
+      // =============================================
+
+      // Load settings toko pertama kali
+      loadSettings();
+
+      // Ambil data produk dari backend
+      fetchProducts();
+
+      // Cek shift aktif — jika belum buka shift, kasir diwajibkan buka dulu
+      cekShiftAktif();
+
+      // Cek stok menipis saat halaman dibuka
+      cekStokMenipis();
+
+      // Polling stok menipis setiap 5 menit
+      setInterval(cekStokMenipis, 5 * 60 * 1000);
+    </script>
+  </body>
+</html>

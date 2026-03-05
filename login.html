@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — POS Kasir</title>
+  <!-- PWA: manifest dan theme color -->
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#c8f135"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="POS Kasir"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg     : #0a0a0a;
+      --panel  : #141414;
+      --border : #222;
+      --accent : #c8f135;
+      --text   : #efefef;
+      --dim    : #555;
+      --red    : #f87171;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      /* Dua kolom: branding kiri | form kanan */
+      grid-template-columns: 1fr 480px;
+    }
+
+    /* =============================================
+       PANEL KIRI — BRANDING
+    ============================================= */
+    .brand-panel {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px;
+      gap: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Grid background decoratif */
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.4;
+    }
+
+    /* Lingkaran aksen besar di pojok */
+    .brand-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -120px;
+      right: -120px;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(200,241,53,0.08) 0%, transparent 70%);
+    }
+
+    .brand-content { position: relative; z-index: 1; }
+
+    .brand-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .brand-tagline {
+      font-size: 1rem;
+      color: var(--dim);
+      line-height: 1.6;
+      max-width: 360px;
+    }
+
+    /* Daftar fitur di panel branding */
+    .brand-features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--dim);
+    }
+
+    .feature-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* =============================================
+       PANEL KANAN — FORM LOGIN
+    ============================================= */
+    .login-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 48px;
+      gap: 32px;
+    }
+
+    .login-header { display: flex; flex-direction: column; gap: 8px; }
+
+    .login-header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+    }
+
+    .login-header p { font-size: 0.88rem; color: var(--dim); }
+
+    /* Form field */
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+
+    .form-label {
+      font-size: 0.78rem;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    /* Wrapper input + icon */
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 14px 13px 42px; /* kiri lebih besar untuk icon */
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(200,241,53,0.08);
+    }
+
+    .form-input::placeholder { color: var(--dim); }
+
+    /* Tombol show/hide password */
+    .btn-toggle-pass {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--dim);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px;
+      transition: color 0.15s;
+    }
+    .btn-toggle-pass:hover { color: var(--text); }
+
+    /* Pesan error login */
+    .error-msg {
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: var(--red);
+      display: none; /* Tersembunyi default, muncul via JS */
+    }
+    .error-msg.show { display: block; }
+
+    /* Tombol login */
+    .btn-login {
+      width: 100%;
+      background: var(--accent);
+      color: #0a0a0a;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      letter-spacing: 0.3px;
+    }
+    .btn-login:hover   { opacity: 0.88; transform: translateY(-1px); }
+    .btn-login:active  { transform: translateY(0); }
+    .btn-login:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* Info default credentials di bawah form */
+    .credentials-hint {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .credentials-hint .hint-title {
+      font-size: 0.72rem;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 2px;
+    }
+
+    .cred-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    .cred-role { color: var(--dim); }
+
+    .cred-info {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =============================================
+       PANEL KIRI — BRANDING
+  ============================================= -->
+  <div class="brand-panel">
+    <div class="brand-content">
+      <div class="brand-logo">⚡ KASIR</div>
+      <p class="brand-tagline">
+        Sistem kasir modern untuk toko kamu. Cepat, simpel, dan semua data tersimpan rapi.
+      </p>
+      <div class="brand-features">
+        <div class="feature-item"><span class="feature-dot"></span> Manajemen produk & stok</div>
+        <div class="feature-item"><span class="feature-dot"></span> Transaksi dengan hitung kembalian otomatis</div>
+        <div class="feature-item"><span class="feature-dot"></span> Cetak struk langsung dari browser</div>
+        <div class="feature-item"><span class="feature-dot"></span> Laporan penjualan harian</div>
+        <div class="feature-item"><span class="feature-dot"></span> Akses admin & kasir terpisah</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       PANEL KANAN — FORM LOGIN
+  ============================================= -->
+  <div class="login-panel">
+    <div class="login-header">
+      <h1>Selamat datang 👋</h1>
+      <p>Masuk ke akun kamu untuk memulai</p>
+    </div>
+
+    <!-- Form login — pakai div bukan form agar tidak submit ke server -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <!-- Username -->
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input
+            class="form-input"
+            type="text"
+            id="inputUsername"
+            placeholder="Masukkan username"
+            autocomplete="username"
+          />
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input
+            class="form-input"
+            type="password"
+            id="inputPassword"
+            placeholder="Masukkan password"
+            autocomplete="current-password"
+            onkeydown="if(event.key==='Enter') doLogin()"
+          />
+          <!-- Tombol toggle lihat password -->
+          <button class="btn-toggle-pass" onclick="togglePass()" id="btnTogglePass">👁</button>
+        </div>
+      </div>
+
+      <!-- Pesan error — muncul jika login gagal -->
+      <div class="error-msg" id="errorMsg"></div>
+
+      <!-- Tombol login -->
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">
+        MASUK
+      </button>
+    </div>
+
+    <!-- Info credentials default -->
+    <div class="credentials-hint">
+      <div class="hint-title">🔑 Akun Default (setelah setup)</div>
+      <div class="cred-row">
+        <span class="cred-role">Admin</span>
+        <span class="cred-info">admin / admin123</span>
+      </div>
+      <div class="cred-row">
+        <span class="cred-role">Kasir</span>
+        <span class="cred-info">kasir1 / kasir123</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =============================================
+    // KONFIGURASI API
+    // =============================================
+    const API_URL = 'http://localhost:3000/api';
+
+    // =============================================
+    // PWA: Daftarkan Service Worker
+    // Hanya jalan di browser yang support SW
+    // =============================================
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('[PWA] Service Worker terdaftar'))
+        .catch(err => console.warn('[PWA] SW gagal:', err));
+    }
+
+    // =============================================
+    // CEK: sudah login? langsung redirect
+    // Dijalankan saat halaman dibuka
+    // =============================================
+    (async function cekSesiAktif() {
+      const token = localStorage.getItem('pos_token');
+      const user  = JSON.parse(localStorage.getItem('pos_user') || 'null');
+      if (!token || !user) return; // Belum login, tampilkan form
+
+      try {
+        // Verifikasi token masih valid ke backend
+        const res = await fetch(`${API_URL}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          // Token masih valid — redirect sesuai role
+          redirectByRole(user.role);
+        }
+        // Jika tidak ok, biarkan di halaman login (token expired)
+      } catch (err) {
+        // Backend tidak bisa diakses, biarkan di halaman login
+      }
+    })();
+
+    // =============================================
+    // TOGGLE SHOW/HIDE PASSWORD
+    // =============================================
+    function togglePass() {
+      const input = document.getElementById('inputPassword');
+      const btn   = document.getElementById('btnTogglePass');
+      if (input.type === 'password') {
+        input.type  = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type  = 'password';
+        btn.textContent = '👁';
+      }
+    }
+
+    // =============================================
+    // PROSES LOGIN
+    // Kirim username + password ke backend,
+    // simpan token di localStorage jika berhasil
+    // =============================================
+    async function doLogin() {
+      const username = document.getElementById('inputUsername').value.trim();
+      const password = document.getElementById('inputPassword').value;
+      const errorMsg = document.getElementById('errorMsg');
+      const btnLogin = document.getElementById('btnLogin');
+
+      // Validasi form
+      if (!username || !password) {
+        showError('Username dan password tidak boleh kosong');
+        return;
+      }
+
+      // Loading state
+      btnLogin.disabled     = true;
+      btnLogin.textContent  = 'Memproses...';
+      errorMsg.classList.remove('show');
+
+      try {
+        const res    = await fetch(`${API_URL}/auth/login`, {
+          method : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body   : JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || 'Login gagal');
+          return;
+        }
+
+        // ✅ Login berhasil — simpan token dan data user
+        localStorage.setItem('pos_token', data.token);
+        localStorage.setItem('pos_user',  JSON.stringify(data.user));
+
+        // Redirect berdasarkan role
+        redirectByRole(data.user.role);
+
+      } catch (err) {
+        showError('❌ Tidak bisa konek ke server. Pastikan backend berjalan.');
+        console.error(err);
+      } finally {
+        btnLogin.disabled    = false;
+        btnLogin.textContent = 'MASUK';
+      }
+    }
+
+    // =============================================
+    // REDIRECT BERDASARKAN ROLE
+    // admin → admin.html | kasir → kasir.html
+    // =============================================
+    function redirectByRole(role) {
+      if (role === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'kasir.html';
+      }
+    }
+
+    // =============================================
+    // TAMPILKAN PESAN ERROR
+    // =============================================
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "name": "pos-kasir",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "start"    : "node src/index.js",
+    "dev"      : "nodemon src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "POS Kasir — sistem kasir lokal berbasis web",
+  "dependencies": {
+    "bcryptjs"           : "^3.0.3",
+    "cors"               : "^2.8.6",
+    "dotenv"             : "^17.3.1",
+    "express"            : "^5.2.1",
+    "express-rate-limit" : "^7.5.0",
+    "helmet"             : "^8.0.0",
+    "jsonwebtoken"       : "^9.0.3",
+    "mysql2"             : "^3.18.2",
+    "winston"            : "^3.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
